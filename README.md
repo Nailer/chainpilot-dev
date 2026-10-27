@@ -1,68 +1,128 @@
 # ChainPilot
 
-A modular onchain assistant for BNB Chain. Position Guard is its first module: monitor a lending position and propose a bounded debt repayment when risk increases.
+A modular BNB Chain assistant. **Position Guard** is the first working module: read a Venus isolated-pool position, detect elevated liquidation risk, and repay debt from a user-funded reserve with limits enforced by a contract.
 
-**Status: local planning prototype.** No deployed agent, ERC-8004 identity, marketplace listing, wallet integration, scheduler, or transaction execution exists yet. This repository alone does not meet the campaign requirements. No liquidation protection or financial return is guaranteed.
+**Development release · BSC testnet only · Not audited.** The local end-to-end test exercises signed enrollment, subscription verification and a real EVM repayment against local fixtures. Read-only checks also pass against the deployed Venus testnet contracts. Public contract deployment, ERC-8004 registration, hosting and marketplace listing are still pending. Local transactions are not campaign evidence.
 
-## Run locally
+## Run it
 
-Node.js 22 or later; no third-party dependencies.
+Requirements: Node 22+; Foundry 1.5.1 with Solidity 0.8.28 for contract builds/tests.
 
 ```sh
+nvm use
+npm ci
 npm test
-npm run demo
+npm run contracts:test
+npm run contracts:build
+npm run test:e2e
+npm run check:live
 npm start
 ```
 
-The demo uses synthetic values and moves no funds. The HTTP server binds to `127.0.0.1:3001`.
+Open **http://localhost:3001**. Analyze the registered campaign wallet without connecting or signing. The default read is live, not a sample dataset. This wallet currently has no position in the selected testnet pool.
 
-- `GET /health`: implementation status.
-- `POST /v1/position-guard/plan`: accepts `{ snapshot, policy }` as JSON. See `scripts/demo.js` for the input fields.
+For configured operation:
 
-## First module: Position Guard
+```sh
+cp .env.example .env
+node --env-file=.env src/server.js
+# A second process, on the same host and persistent data volume:
+npm run worker
+```
 
-Given liquidation-threshold-adjusted collateral, debt, a trigger, target, budget and per-action cap, the planner estimates a repayment. Amounts are integer strings in USD micro-units (1 USD = 1,000,000), **not token units**. It rejects stale snapshots and invalid policies. An insufficient budget is reported explicitly.
+The web server never signs transactions. The worker defaults to monitor-only and requires an explicit execution setting, verified vault provenance, active paid subscription, and a separate keeper key file before signing anything. Use one worker per keeper. Do not use the campaign owner's private key as the keeper key.
 
-This calculation assumes repayment leaves collateral unchanged and reduces aggregate debt by the stated USD amount. Real execution needs verified protocol-specific accounting, current prices, accrued debt, market selection, token decimals, gas and simulation. Never treat the planner output as transaction calldata or an authorization to spend.
+## What works
 
-## Intended product
+- Live position accounting at one pinned block, using liquidation thresholds rather than borrowing collateral factors. Results must match Venus's own liquidation liquidity.
+- Repayment planning with exact integer arithmetic and token decimal conversion. The chosen testnet USDT token has **6 decimals**, unlike some mainnet tokens with the same ticker.
+- A single-market vault that permits only debt repayment for its owner. It enforces funding, per-action cap, expiry, cooldown, pause, and measurable health-factor improvement; it resets the market allowance after use.
+- A factory proving which vaults were created from this code. The worker rejects arbitrary vault addresses.
+- Owner-signed enrollment tied to service origin, chain, vault, subscription ID, target health factor and expiry.
+- HelloFugu subscription verification directly from contracts, including cancellation and expiry. A listed name or a payment screenshot does not authorize service.
+- Worker simulation, gas ceiling, two-confirmation receipts, pending-transaction reconciliation, and durable observation logs. Errors fail closed.
+- Callable MCP tools, A2A messages, ERC-8004 registration metadata, a wallet-driven setup dashboard, and an evidence checklist.
 
-Users choose the position, thresholds, permitted repayment asset, spending cap and expiry. The agent watches the position, proposes or executes an authorized repayment, and records a verifiable receipt. Execution limits must be enforced onchain before any autonomous spending is enabled.
+The decision engine is deterministic. There is no LLM in the transaction authorization path. Portfolio Watch, Yield Watch and Rebalancing are roadmap ideas, not implemented modules.
 
-Future modules may include Portfolio Watch, Yield Watch and Rebalancing. These are roadmap ideas, not implemented features. Position Guard uses deterministic financial rules; no LLM is currently integrated. A future natural-language layer must not override execution constraints.
+## Verified network profile
 
-## Campaign identity — pending
+Only **Venus isolated pools on BSC testnet, chain 97**, are configured. This is not a Venus Core adapter. Changing only the RPC cannot enable mainnet.
 
-| Field | Current value |
+| Contract | Address |
 | --- | --- |
-| Name | ChainPilot |
-| Initial category | Health factor |
-| Intended development network | BSC testnet, chain 97 |
-| Campaign/owner wallet | Not configured |
-| ERC-8004 registry ID | Not registered |
-| Agent card and live endpoint | Not deployed |
-| Marketplace | HelloFugu proposed; integration pending |
+| Stablecoins Comptroller | `0x10b57706AD2345e590c2eA4DC02faef0d9f5b08B` |
+| vUSDT Stablecoins market | `0x3338988d0beb4419Acb8fE624218754053362D06` |
+| USDT underlying, read from market | `0xA11c8D9DC9b66E209Ef60F0C8D969D3CD988782c` |
+| ERC-8004 IdentityRegistry | `0x8004A818BFB912233c491871b3d84c89A494BD9e` |
+| HelloFugu listing registry | `0xb2f36070E6eae3353E8e755172B477DF213ae248` |
+| HelloFugu subscription | `0xfdb083371f44Cf53181350389D3217e51B431776` |
 
-Do not invent an agent ID or submit a placeholder as a registered identity. Add the actual owner, registry ID, chain, public endpoint and listing link once confirmed.
+Venus source/deployment reference: [943e7db](https://github.com/VenusProtocol/isolated-pools/tree/943e7db1855c8ab4a09104f1d09e2b2db0506b95). HelloFugu interface reference: [52b3e89](https://github.com/Lexirieru/fugugent/tree/52b3e89b94d18e4bf6a5ec84a9c925255294f478). Integrations use their public interfaces; this agent is an original implementation, not a fork of their agents. Dependencies are pinned in package-lock.json.
 
-## Next milestones
+Testnet oracle prices and token balances are development data and must not be treated as mainnet economic values. The reader uses stored interest; execution accrues all entered markets before checking risk again. A cap-limited payment may improve health without reaching the requested target. No swaps, borrowing, collateral withdrawals, native-BNB repayments or guarantees against liquidation are supported.
 
-- [ ] Verify lending protocol testnet support and read live positions.
-- [ ] Implement and test bounded repayment authorization, simulation, execution and receipts.
-- [ ] Deploy a reachable service and publish a resolvable agent card.
-- [ ] Register an ERC-8004 identity owned by the campaign wallet; publish ID and chain here.
-- [ ] Complete campaign registration before qualifying campaign activity; resolve registration/listing order with organizers if necessary.
-- [ ] List on a shortlisted marketplace and connect its actual hiring lifecycle to the service.
-- [ ] Obtain three completed hires from independent wallets neither owned nor funded by the builder.
-- [ ] Complete at least five legitimate category-consistent onchain actions across three separate days.
-- [ ] Complete the participant's separate three-agent/two-marketplace hiring requirement.
+## Deployment and onboarding
 
-Keep endpoint probes, protocol receipts and marketplace hires separately identifiable. Simulations, local tests, approvals and fabricated activity are not qualifying execution.
+1. Host the Node service at a stable HTTPS origin and set `PUBLIC_URL`. Use persistent storage for `DATA_DIR`; an ephemeral filesystem can lose enrollments and receipt state. A Dockerfile is included. `RUN_WORKER=true` runs HTTP and the worker under a common supervisor; mount the persistent data directory and the keeper secret file. No secret belongs in the image.
+2. Use a dedicated keeper address and configure `KEEPER_ADDRESS`. It needs testnet gas only. Keep the secret in the host's secret manager or a permission-restricted mounted file, referenced by `KEEPER_KEY_FILE`.
+3. As the campaign wallet, use Operator setup to deploy the factory. This creates a contract but does not fund a reserve. Set the resulting `FACTORY_ADDRESS` on the host. Verify its controller/market and publish it below.
+4. Check the service externally at `/health`, `/.well-known/agent-card.json`, `/registration.json` and `/mcp`. Configure the worker and inspect its heartbeat before advertising automatic execution.
+5. As the campaign wallet, register the ERC-8004 identity pointing to the HTTPS `/registration.json`. Set the actual `AGENT_ID` and publish it here. Never register the same agent under multiple IDs.
+6. Set an explicit service price/duration, then list on HelloFugu from the same owner wallet. Set `LISTING_ID` and publish the listing URL here. HelloFugu's own `/list` flow is also supported, using the public agent card endpoint and this repository.
+7. A real user hires the listing, creates their repayment vault, approves a specific reserve amount, funds it, and signs enrollment with the subscription ID. They must already have a supported Venus borrowing position; setup does not fabricate a position or borrow for them.
+8. Run the worker with `EXECUTION_ENABLED=false` first. Inspect its decisions. Enable execution only after the user has reviewed the vault permissions, budget, expiry and asset. Keep monitoring uptime and balances.
+9. Users can pause their vault or withdraw unused reserve directly, without the agent's cooperation. Subscription cancellation/expiry stops the worker from taking new actions but does not pause the vault onchain: use its pause control to revoke keeper execution immediately. A keeper already authorized onchain can call within the vault limits until paused or expired.
 
-## References
+Keep keys out of chat, command arguments, source, logs and GitHub. The registered campaign wallet remains the identity owner. A separate keeper is the service's execution key, not a second campaign participant.
 
-- [Official Set and Earn campaign rules](https://www.bnbchain.org/en/hackathons/smart-money-era-set-and-earn)
-- [HelloFugu listing flow](https://app.hellofugu.xyz/list)
-- [TermiX documentation](https://docs.termix.ai/aacp/overview)
+## Campaign identity and remaining requirements
 
-Never commit wallet keys, seed phrases, credentials or personal registration details. This prototype has not been audited.
+| Field | Status |
+| --- | --- |
+| Agent name / category | ChainPilot / Health factor |
+| Public repository | https://github.com/mana-devs/chainpilot |
+| Campaign registration | Submitted through Google Forms on October 27, 2026 |
+| Campaign owner | `0xf5506B65e71601991895cD40bD2E875F29cca0da` |
+| Identity network | BSC testnet, chain 97 |
+| Registry ID | **Pending actual registration** |
+| Keeper / factory | **Pending deployment and configuration** |
+| Public endpoint | **Pending stable hosting** |
+| Marketplace listing | **Pending actual listing** |
+| Three independent completed hires | **Pending real users and organizer review** |
+| Five onchain actions across three days | **Pending real category-consistent activity** |
+| Participant's three different-agent hires across two marketplaces | **Pending separate hires** |
+
+The campaign deadline is **November 5, 2026 at 12:00 UTC (1:00 p.m. Lagos)**. Budget at least three separate days for genuine execution. Do not schedule unnecessary transactions merely to fill the quota, hire from wallets you control or fund, or treat multiple registrations as multiple agents.
+
+`GET /v1/campaign` exposes these checks without marking the overall campaign complete. `POST /v1/evidence/repayment` verifies successful keeper transactions, vault provenance, repayment events, confirmations and UTC dates; hashes are deduplicated. Completed paid subscriptions with recorded service are candidate hire evidence, not proof of independent funding. Final eligibility, originality, independence and prize allocation remain the organizer's decision.
+
+## API
+
+| Route | Purpose |
+| --- | --- |
+| `GET /health` | HTTP availability and recent worker heartbeat |
+| `GET /.well-known/agent-card.json` | A2A capability card |
+| `GET /registration.json` | ERC-8004 registration file |
+| `POST /v1/position` | `{ "borrower": "0x..." }` live Venus read |
+| `POST /v1/vault` | `{ "vault": "0x...", "targetBps": 15000 }` inspection |
+| `POST /v1/enrollment-message` | Prepare a short-lived enrollment message |
+| `POST /v1/enroll` | Verify signature, subscription and vault; persist enrollment |
+| `POST /v1/transactions/prepare` | Prepare supported unsigned wallet transactions |
+| `POST /v1/evidence/repayment` | `{ "hash": "0x..." }` verify a repayment receipt |
+| `GET /v1/campaign` | Evidence and outstanding requirements |
+| `POST /mcp` | Stateless MCP JSON-RPC: initialize, tools/list, tools/call |
+| `POST /a2a` | A2A message/send with a borrower in text or data parts |
+
+MCP tools: `analyze_position`, `inspect_vault`, `campaign_status`. No public HTTP endpoint signs or broadcasts transactions. Browser actions are unsigned until the user's own wallet approves them. Smart-contract-wallet enrollment signatures (ERC-1271) are not implemented; this release supports EOA owners.
+
+## Checks and evidence
+
+- `npm test`: planner, decimal conversion, stale data, state storage, HTTP/MCP metadata, validation and origin handling.
+- `forge test -vv`: authorization, risk limits, protocol failures, cooldown, expiry, withdrawal and fuzzed reserve accounting.
+- `npm run test:e2e`: isolated local Anvil chain, deployment, signed enrollment, worker execution, receipt, cancellation and unauthorized-withdrawal rejection. **Never a public campaign transaction.**
+- `npm run check:live`: read-only RPC compatibility report in ignored `artifacts/live-check.json`.
+
+Tests do not constitute a security audit. Public-protocol repayment execution and real marketplace subscription completion still require an onchain acceptance run after deployment.
+
+[Official campaign rules](https://www.bnbchain.org/en/hackathons/smart-money-era-set-and-earn) · [HelloFugu listing](https://app.hellofugu.xyz/list)

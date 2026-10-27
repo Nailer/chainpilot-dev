@@ -1,13 +1,24 @@
 {
   "name": "chainpilot",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "private": true,
   "type": "module",
   "description": "A modular BNB Chain assistant, starting with lending-position protection.",
-  "engines": { "node": ">=22" },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "start": "node src/server.js",
     "demo": "node scripts/demo.js",
-    "test": "node --test"
+    "test": "node --test",
+    "contracts:build": "node scripts/build-contracts.js",
+    "contracts:test": "forge test -vv",
+    "worker": "node --env-file=.env scripts/worker.js",
+    "check:live": "node scripts/check-live.js",
+    "test:e2e": "node scripts/e2e.js"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "5.6.1",
+    "viem": "2.57.12"
   }
 }
