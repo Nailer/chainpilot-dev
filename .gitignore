@@ -12,3 +12,6 @@ data/
 artifacts/
 cache/
 .secrets/
+
+.wrangler/
+.dev.vars*

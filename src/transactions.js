@@ -1,4 +1,3 @@
-import { readFile } from 'node:fs/promises';
 import { encodeFunctionData, encodeDeployData } from 'viem';
 import { address } from './config.js';
 import { identityAbi, listingAbi, factoryAbi, vaultAbi, tokenAbi } from './chain/abi.js';
@@ -8,14 +7,14 @@ const positive = (value,name) => {
   if (!/^[1-9]\d{0,59}$/.test(String(value))) throw new Error(`Invalid ${name}`);
   return BigInt(value);
 };
-export async function prepareTransaction(config,input,client = createClient(config)) {
+export async function prepareTransaction(config,input,client = createClient(config), contracts = null) {
   const from = address(input.from,'sender');
   const tx = { from, chainId: '0x61', value: '0x0' };
   const contractCall = (to,abi,functionName,args=[]) => ({ ...tx,to,data: encodeFunctionData({abi,functionName,args}) });
   switch (input.action) {
     case 'deploy-factory': {
       if (from.toLowerCase() !== config.campaignOwner.toLowerCase()) throw new Error('Deploy from the registered campaign wallet');
-      const bundle = JSON.parse(await readFile(new URL('../public/contracts.json',import.meta.url),'utf8'));
+      const bundle = contracts || JSON.parse(await (await import('node:fs/promises')).readFile(new URL('../public/contracts.json',import.meta.url),'utf8'));
       return { ...tx, data: encodeDeployData({ abi: bundle.factory.abi, bytecode: bundle.factory.bytecode, args: [config.controller,config.market] }) };
     }
     case 'create-vault': {
