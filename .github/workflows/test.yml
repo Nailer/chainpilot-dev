@@ -12,6 +12,8 @@ jobs:
           node-version: '22'
       - run: npm ci
       - run: npm test
+      - run: npm run cloud:check
+      - run: npm run test:cloud
       - uses: foundry-rs/foundry-toolchain@v1
         with:
           version: v1.5.1

@@ -129,3 +129,7 @@ For Render, use the [launch runbook](docs/RENDER-LAUNCH.md). Optional persistent
 Tests do not constitute a security audit. Public-protocol repayment execution and real marketplace subscription completion still require an onchain acceptance run after deployment.
 
 [Official campaign rules](https://www.bnbchain.org/en/hackathons/smart-money-era-set-and-earn) · [HelloFugu listing](https://app.hellofugu.xyz/list)
+
+## Free Cloudflare hosting and Pokter
+
+The Cloudflare runtime uses SQLite-backed Durable Objects for durable state and scheduled work. See [Cloudflare launch instructions](docs/CLOUDFLARE-LAUNCH.md) for deployment, service-wallet binding and the Pokter escrow flow. Initial deployment disables execution; public-chain acceptance and external Pokter checks remain required. A Pokter risk-report hire does not activate HelloFugu vault subscriptions.

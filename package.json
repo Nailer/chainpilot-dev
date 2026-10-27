@@ -15,10 +15,17 @@
     "contracts:test": "forge test -vv",
     "worker": "node --env-file=.env scripts/worker.js",
     "check:live": "node scripts/check-live.js",
-    "test:e2e": "node scripts/e2e.js"
+    "test:e2e": "node scripts/e2e.js",
+    "cloud:dev": "wrangler dev --port 8787",
+    "cloud:check": "wrangler deploy --dry-run",
+    "cloud:deploy": "wrangler deploy",
+    "test:cloud": "node scripts/cloud-smoke.js"
   },
   "dependencies": {
     "@openzeppelin/contracts": "5.6.1",
     "viem": "2.57.12"
+  },
+  "devDependencies": {
+    "wrangler": "4.153.0"
   }
 }
