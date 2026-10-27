@@ -40,6 +40,8 @@ export class ChainPilotAgent extends DurableObject {
     const publicUrl=this.env.PUBLIC_URL||settings.publicUrl||origin;
     if(!settings.publicUrl&&publicUrl)await this.ctx.storage.put('settings',{...settings,publicUrl});
     if(!publicUrl)throw new Error('PUBLIC_URL is not configured');
+    // Start promptly after deploy; cron propagation can otherwise delay the first heartbeat.
+    if(await this.ctx.storage.getAlarm()===null)await this.ctx.storage.setAlarm(Date.now()+1000);
     this.config={...configFromEnv({...this.env,...settings,PUBLIC_URL:publicUrl,KEEPER_ADDRESS:this.account.address}),marketplace:'pokter'};
     this.client=createClient(this.config);
     this.wallet=createWalletClient({account:this.account,chain:bscTestnet,transport:http(this.config.rpcUrl,{timeout:12000,retryCount:1})});
