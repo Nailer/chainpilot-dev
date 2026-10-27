@@ -2,7 +2,7 @@
 
 A modular BNB Chain assistant. **Position Guard** is the first working module: read a Venus isolated-pool position, detect elevated liquidation risk, and repay debt from a user-funded reserve with limits enforced by a contract.
 
-**Development release · BSC testnet only · Not audited.** The local end-to-end test exercises signed enrollment, subscription verification and a real EVM repayment against local fixtures. Read-only checks also pass against the deployed Venus testnet contracts. Public contract deployment, ERC-8004 registration, hosting and marketplace listing are still pending. Local transactions are not campaign evidence.
+**Development release · BSC testnet only · Not audited.** Local acceptance covers signed enrollment and subscription-gated execution, plus supply, borrowing and repayment against real Venus contracts on a local testnet fork. Read-only checks also pass against the deployed Venus testnet contracts. Public contract deployment, ERC-8004 registration, hosting and marketplace listing are still pending. Local transactions are not campaign evidence.
 
 ## Run it
 
@@ -51,8 +51,8 @@ Only **Venus isolated pools on BSC testnet, chain 97**, are configured. This is 
 
 | Contract | Address |
 | --- | --- |
-| Stablecoins Comptroller | `0x10b57706AD2345e590c2eA4DC02faef0d9f5b08B` |
-| vUSDT Stablecoins market | `0x3338988d0beb4419Acb8fE624218754053362D06` |
+| DeFi Comptroller | `0x23a73971A6B9f6580c048B9CB188869B2A2aA2aD` |
+| vUSDT DeFi market | `0x80CC30811e362aC9aB857C3d7875CbcCc0b65750` |
 | USDT underlying, read from market | `0xA11c8D9DC9b66E209Ef60F0C8D969D3CD988782c` |
 | ERC-8004 IdentityRegistry | `0x8004A818BFB912233c491871b3d84c89A494BD9e` |
 | HelloFugu listing registry | `0xb2f36070E6eae3353E8e755172B477DF213ae248` |
@@ -122,6 +122,9 @@ MCP tools: `analyze_position`, `inspect_vault`, `campaign_status`. No public HTT
 - `forge test -vv`: authorization, risk limits, protocol failures, cooldown, expiry, withdrawal and fuzzed reserve accounting.
 - `npm run test:e2e`: isolated local Anvil chain, deployment, signed enrollment, worker execution, receipt, cancellation and unauthorized-withdrawal rejection. **Never a public campaign transaction.**
 - `npm run check:live`: read-only RPC compatibility report in ignored `artifacts/live-check.json`.
+- `RUN_VENUS_FORK=true forge test --match-contract VenusForkTest -vv`: real Venus contract acceptance on a local fork. Supplies and borrows in the configured DeFi market, funds a reserve, and confirms repayment improves health factor and clears allowance. Never broadcasts. Skipped in ordinary offline tests.
+
+For Render, use the [launch runbook](docs/RENDER-LAUNCH.md). Optional persistent keeper bootstrap creates an operational key on the host without exposing it to chat or source control.
 
 Tests do not constitute a security audit. Public-protocol repayment execution and real marketplace subscription completion still require an onchain acceptance run after deployment.
 
