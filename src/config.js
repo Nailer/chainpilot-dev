@@ -10,16 +10,16 @@ export function address(value, name = 'address') {
 }
 export function configFromEnv(env = process.env) {
   const chainId = Number(env.CHAIN_ID || 97);
-  // The shipped addresses are Venus isolated-pool Stablecoins on BSC testnet.
+  // The shipped addresses are Venus isolated-pool DeFi USDT on BSC testnet.
   // Mainnet is intentionally not enabled through an arbitrary RPC override.
   if (chainId !== 97) throw new Error('Only BSC testnet (97) is configured; mainnet needs a reviewed deployment profile');
-  const base = env.PUBLIC_URL || 'http://localhost:3001';
+  const base = env.PUBLIC_URL || env.RENDER_EXTERNAL_URL || 'http://localhost:3001';
   const url = new URL(base);
   if (url.protocol !== 'https:' && !['localhost','127.0.0.1'].includes(url.hostname)) throw new Error('PUBLIC_URL must use HTTPS');
   return {
     chainId, rpcUrl: env.BSC_RPC_URL || 'https://bsc-testnet-rpc.publicnode.com',
-    controller: '0x10b57706AD2345e590c2eA4DC02faef0d9f5b08B',
-    market: '0x3338988d0beb4419Acb8fE624218754053362D06',
+    controller: '0x23a73971A6B9f6580c048B9CB188869B2A2aA2aD',
+    market: '0x80CC30811e362aC9aB857C3d7875CbcCc0b65750',
     identityRegistry: '0x8004A818BFB912233c491871b3d84c89A494BD9e',
     listingRegistry: '0xb2f36070E6eae3353E8e755172B477DF213ae248',
     subscription: '0xfdb083371f44Cf53181350389D3217e51B431776',

@@ -21,6 +21,7 @@ test('live planner respects debt, budget, balance and policy state',()=>{
   assert.equal(decideProtection(position,{...vault,balance:500000n},{now}).amount,500000n);
   assert.equal(decideProtection({...position,repaymentAsset:{...position.repaymentAsset,debtTokenUnits:20n}},vault,{now}).amount,20n);
   assert.equal(decideProtection(position,{...vault,paused:true},{now}).reason,'paused');
+  assert.equal(decideProtection({...position,marketStatus:{repayPaused:true}},vault,{now}).reason,'protocol-repayments-paused');
   assert.equal(decideProtection(position,{...vault,expiresAt:1n},{now}).reason,'expired');
   assert.equal(decideProtection({...position,debtUsd18:0n},vault,{now}).reason,'no-debt');
   assert.throws(()=>decideProtection({...position,observedAt:now-91000},vault,{now}));

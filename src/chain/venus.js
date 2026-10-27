@@ -27,10 +27,13 @@ export async function readPosition(client, config, borrower) {
   ]);
   if (selectedController.toLowerCase() !== config.controller.toLowerCase()) throw new Error('Market controller mismatch');
   if (assets.length > 32) throw new Error('More than 32 markets are unsupported');
-  const [decimals, symbol, selectedPrice, selectedSnapshot] = await Promise.all([
+  const [decimals, symbol, selectedPrice, selectedSnapshot, mintPaused, borrowPaused, repayPaused] = await Promise.all([
     call(underlying, tokenAbi, 'decimals'), call(underlying, tokenAbi, 'symbol'),
     call(oracle, oracleAbi, 'getUnderlyingPrice', [config.market]),
-    call(config.market, marketAbi, 'getAccountSnapshot', [borrower])
+    call(config.market, marketAbi, 'getAccountSnapshot', [borrower]),
+    call(config.controller, controllerAbi, 'actionPaused', [config.market,0]),
+    call(config.controller, controllerAbi, 'actionPaused', [config.market,2]),
+    call(config.controller, controllerAbi, 'actionPaused', [config.market,3])
   ]);
   if (selectedPrice <= 0n || selectedSnapshot[0] !== 0n) throw new Error('Invalid repayment market snapshot or price');
   let adjustedCollateralUsd18 = 0n, debtUsd18 = 0n;
@@ -55,6 +58,7 @@ export async function readPosition(client, config, borrower) {
     adjustedCollateralUsd18, debtUsd18,
     healthFactorWad: debtUsd18 === 0n ? null : adjustedCollateralUsd18 * WAD / debtUsd18,
     markets, repaymentAsset: { market: config.market, token: underlying, decimals, symbol, priceMantissa: selectedPrice, debtTokenUnits: selectedSnapshot[2] },
+    marketStatus: { mintPaused,borrowPaused,repayPaused },
     accounting: 'stored-interest; execution accrues interest again before checking risk',
     display: { collateralUsd: formatUnits(adjustedCollateralUsd18,18), debtUsd: formatUnits(debtUsd18,18) }
   };
@@ -82,6 +86,7 @@ export function decideProtection(position, vault, { targetBps = 15000, now = Dat
   const hold = reason => ({ action: 'hold', reason, amount: 0n, targetBps });
   if (now - position.observedAt > 90000 || position.observedAt > now + 15000) throw new Error('Stale position');
   if (vault.paused) return hold('paused');
+  if (position.marketStatus?.repayPaused) return hold('protocol-repayments-paused');
   if (BigInt(Math.floor(now/1000)) >= vault.expiresAt) return hold('expired');
   if (vault.lastExecutedAt !== 0n && BigInt(Math.floor(now/1000)) < vault.lastExecutedAt + vault.cooldown) return hold('cooldown');
   if (position.debtUsd18 === 0n) return hold('no-debt');

@@ -3,7 +3,8 @@ export const controllerAbi = parseAbi([
   'function getAssetsIn(address) view returns (address[])',
   'function markets(address) view returns (bool,uint256,uint256)',
   'function oracle() view returns (address)',
-  'function getAccountLiquidity(address) view returns (uint256,uint256,uint256)'
+  'function getAccountLiquidity(address) view returns (uint256,uint256,uint256)',
+  'function actionPaused(address,uint8) view returns (bool)'
 ]);
 export const marketAbi = parseAbi([
   'function getAccountSnapshot(address) view returns (uint256,uint256,uint256,uint256)',

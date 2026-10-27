@@ -43,6 +43,7 @@ contract MockController {
     function oracle() external view returns(address) { return address(this); }
     function getUnderlyingPrice(address) external view returns(uint256) { return price; }
     function setPrice(uint256 x) external { price = x; }
+    function actionPaused(address,uint8) external pure returns(bool) {return false;}
     function getAccountLiquidity(address user) external view returns(uint256,uint256,uint256) {
         (,uint256 balance,uint256 debt,uint256 exchange)=MockMarket(asset).getAccountSnapshot(user);
         uint256 collateral=(((exchange*price/1e18)*0.76e18/1e18)*balance)/1e18;
