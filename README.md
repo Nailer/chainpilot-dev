@@ -85,7 +85,7 @@ Keep keys out of chat, command arguments, source, logs and GitHub. The registere
 | Campaign registration | Submitted through Google Forms on October 27, 2026 |
 | Campaign owner | `0xf5506B65e71601991895cD40bD2E875F29cca0da` |
 | Identity network | BSC testnet, chain 97 |
-| Registry ID | **Pending actual registration** |
+| Registry ID | **2677** on the ERC-8004 IdentityRegistry, BSC testnet (chain 97), owned by the campaign owner above |
 | Keeper / factory | **Pending deployment and configuration** |
 | Public endpoint | **Pending stable hosting** |
 | Marketplace listing | **Pending actual listing** |
