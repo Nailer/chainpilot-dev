@@ -1,0 +1,12 @@
+import { writeFile, mkdir } from 'node:fs/promises';
+import { configFromEnv, SOURCES } from '../src/config.js';
+import { createClient, readPosition, jsonSafe } from '../src/chain/venus.js';
+import { identityAbi } from '../src/chain/abi.js';
+const config=configFromEnv(),client=createClient(config);
+const position=await readPosition(client,config,config.campaignOwner);
+const code=await client.getCode({address:config.identityRegistry});
+if(!code||code==='0x')throw new Error('Identity registry missing');
+const report=jsonSafe({checkedAt:new Date().toISOString(),sources:SOURCES,chainId:config.chainId,position,identityRegistryDeployed:true,broadcastTransactions:0,note:'Read-only compatibility check. Not qualifying agent execution.'});
+await mkdir('artifacts',{recursive:true});
+await writeFile('artifacts/live-check.json',JSON.stringify(report,null,2));
+console.log(JSON.stringify(report,null,2));

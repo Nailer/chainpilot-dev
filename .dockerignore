@@ -1,0 +1,10 @@
+.git
+node_modules
+.env
+.env.*
+.secrets
+data
+artifacts
+cache
+contracts/out
+contracts/cache
